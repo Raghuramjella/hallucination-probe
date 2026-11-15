@@ -26,6 +26,14 @@ Self-contained, saves to Drive, resumable after a disconnect.
 
 **You will know whether the idea works by the end of Stage 3 - about two hours.**
 
+## Part 2: improvements notebook
+
+`notebooks/02_improvements.ipynb` - saves to Google Drive, 5,000 questions,
+three poolings (including predicting *before* the answer exists), validation-chosen
+layer, log-prob and combined baselines with significance tests, timed
+self-consistency, TriviaQA -> Natural Questions transfer, multi-model comparison
+(change `MODEL_ID` and re-run), and a Gradio demo with a public link.
+
 ## Or run the scripts
 
 ```bash
