@@ -1,0 +1,522 @@
+{
+  "pooling": "p_last",
+  "seeds": 5,
+  "models": [
+    {
+      "name": "Qwen2.5-1.5B-Instruct",
+      "best_layer": 21,
+      "n_layers": 28,
+      "best_pooling": "a_mean"
+    },
+    {
+      "name": "Qwen2.5-3B-Instruct",
+      "best_layer": 27,
+      "n_layers": 36,
+      "best_pooling": "a_last"
+    },
+    {
+      "name": "SmolLM2-1.7B-Instruct",
+      "best_layer": 16,
+      "n_layers": 24,
+      "best_pooling": "a_last"
+    }
+  ],
+  "pairs": {
+    "Qwen2.5-1.5B-Instruct -> Qwen2.5-3B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.77,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.7233286905497278,
+          "std": 0.013123572500724446
+        },
+        "transfer: ridge map": {
+          "mean": 0.7636407314267363,
+          "std": 0.013892069860278272
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.7362970594667185,
+          "std": 0.017734668832961348
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.5335255951391367,
+          "std": 0.0919334888615057
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.4992960898361523,
+          "std": 0.012182911177032052
+        },
+        "control: unaligned": {
+          "mean": 0.5108459046914582,
+          "std": 0.06277618232962479
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.702254569626101,
+          "std": 0.019755422017185758
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7403602084406944,
+          "std": 0.007284083081289142
+        },
+        "B min token log-prob": {
+          "mean": 0.7919318888570228,
+          "std": 0.008894335096900335
+        }
+      },
+      "bootstrap": {
+        "transfer: ridge map - control: shuffled-pair ridge": [
+          0.26804179957667723,
+          0.23065084350038773,
+          0.30358734010165167
+        ],
+        "transfer: ridge map - difficulty: A probe on A": [
+          0.06145584167216091,
+          0.039454184248892174,
+          0.0824785558986521
+        ],
+        "transfer: ridge map - B min token log-prob": [
+          -0.010789524606019797,
+          -0.039162930796673365,
+          0.017242447967737436
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.4992960898361523,
+        "p2.5": 0.3598759692142909,
+        "p97.5": 0.6382773479913139,
+        "max_dist_from_0.5": 0.22819780399029643,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7636407314267363,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.0557312898045996
+      }
+    },
+    "Qwen2.5-1.5B-Instruct -> SmolLM2-1.7B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.7644,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.6671946495719487,
+          "std": 0.0070281588145736686
+        },
+        "transfer: ridge map": {
+          "mean": 0.7210336946168894,
+          "std": 0.010314903526385049
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.6760136361310064,
+          "std": 0.004434289638728573
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.49971705065172517,
+          "std": 0.07536450166447953
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.5012278539296713,
+          "std": 0.0037203426934366295
+        },
+        "control: unaligned": {
+          "mean": 0.5008076398843153,
+          "std": 0.021416740422473046
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.6885720998970253,
+          "std": 0.012861817787702307
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7310643535779529,
+          "std": 0.005163614962263678
+        },
+        "B min token log-prob": {
+          "mean": 0.7548506517566599,
+          "std": 0.006564285205521162
+        }
+      },
+      "bootstrap": {
+        "transfer: ridge map - control: shuffled-pair ridge": [
+          0.2830593615257333,
+          0.2419280838525315,
+          0.3239945895821421
+        ],
+        "transfer: ridge map - difficulty: A probe on A": [
+          0.028597448784639608,
+          0.005079198443960803,
+          0.05159950545773317
+        ],
+        "transfer: ridge map - B min token log-prob": [
+          -0.031519504965833764,
+          -0.0618257119008089,
+          -0.0009865346860519018
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.5012278539296713,
+        "p2.5": 0.42017617079847774,
+        "p97.5": 0.5944491493943275,
+        "max_dist_from_0.5": 0.1257316324686456,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7210336946168894,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.0806946594662923
+      }
+    },
+    "Qwen2.5-3B-Instruct -> Qwen2.5-1.5B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.77,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.7124799375735322,
+          "std": 0.008173903701079644
+        },
+        "transfer: ridge map": {
+          "mean": 0.7629704450988914,
+          "std": 0.004165187203838054
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.7224384164698534,
+          "std": 0.012140539129046316
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.4936643419070038,
+          "std": 0.09857061454551973
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.4952027597982078,
+          "std": 0.004590655828110272
+        },
+        "control: unaligned": {
+          "mean": 0.5078460624529374,
+          "std": 0.05308006376531197
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.7252866099670074,
+          "std": 0.010830991700269528
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7666717977777588,
+          "std": 0.006156626107343987
+        },
+        "B min token log-prob": {
+          "mean": 0.7753793935870595,
+          "std": 0.007858055815666317
+        }
+      },
+      "bootstrap": {
+        "transfer: ridge map - control: shuffled-pair ridge": [
+          0.3157706073952436,
+          0.26660714428935955,
+          0.36231338309611355
+        ],
+        "transfer: ridge map - difficulty: A probe on A": [
+          0.02545893983545225,
+          0.002501003063583702,
+          0.04845253415574792
+        ],
+        "transfer: ridge map - B min token log-prob": [
+          -0.02006932801082834,
+          -0.05187903167861833,
+          0.014606902616493452
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.4952027597982078,
+        "p2.5": 0.36228331233532884,
+        "p97.5": 0.6132856428308966,
+        "max_dist_from_0.5": 0.1653028997990238,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7629704450988914,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.070865865637302
+      }
+    },
+    "Qwen2.5-3B-Instruct -> SmolLM2-1.7B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.7392,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.6671946495719487,
+          "std": 0.0070281588145736686
+        },
+        "transfer: ridge map": {
+          "mean": 0.7192653248370192,
+          "std": 0.005621007354005545
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.6707770453207035,
+          "std": 0.010278301335358887
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.4822529815720797,
+          "std": 0.041987711520153966
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.5020410387135918,
+          "std": 0.001238010291246553
+        },
+        "control: unaligned": {
+          "mean": 0.5003627528050901,
+          "std": 0.036278934327142576
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.7059778448709502,
+          "std": 0.005861560924832056
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7384066315674297,
+          "std": 0.009393382258948941
+        },
+        "B min token log-prob": {
+          "mean": 0.7548506517566599,
+          "std": 0.006564285205521162
+        }
+      },
+      "bootstrap": {
+        "transfer: ridge map - control: shuffled-pair ridge": [
+          0.30064637364974517,
+          0.2555832279327259,
+          0.34701283647152936
+        ],
+        "transfer: ridge map - difficulty: A probe on A": [
+          0.0011239291832931483,
+          -0.02475997147831845,
+          0.026577671822041547
+        ],
+        "transfer: ridge map - B min token log-prob": [
+          -0.03769885059518126,
+          -0.06756275593052737,
+          -0.007229761817464302
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.5020410387135917,
+        "p2.5": 0.4033976623681963,
+        "p97.5": 0.5873914908227241,
+        "max_dist_from_0.5": 0.12396663774616534,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7192653248370192,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.0780442038893407
+      }
+    },
+    "SmolLM2-1.7B-Instruct -> Qwen2.5-1.5B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.7644,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.7124799375735322,
+          "std": 0.008173903701079644
+        },
+        "transfer: ridge map": {
+          "mean": 0.7294465530002165,
+          "std": 0.01928845307938661
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.6907128262849869,
+          "std": 0.038939960437313945
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.4999120921011966,
+          "std": 0.12183560038806791
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.49510699178552536,
+          "std": 0.008687128582738336
+        },
+        "control: unaligned": {
+          "mean": 0.4754139366979909,
+          "std": 0.033215862291318114
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.6755211559991336,
+          "std": 0.016604198916027164
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7382768790142329,
+          "std": 0.0053300063040993976
+        },
+        "B min token log-prob": {
+          "mean": 0.7753793935870595,
+          "std": 0.007858055815666317
+        }
+      },
+      "bootstrap": {
+        "transfer: Procrustes map - control: shuffled-pair ridge": [
+          0.20975045382738727,
+          0.16974546495884194,
+          0.24935552778140094
+        ],
+        "transfer: Procrustes map - difficulty: A probe on A": [
+          0.07428295194073317,
+          0.0463324522443679,
+          0.10433034633320333
+        ],
+        "transfer: Procrustes map - B min token log-prob": [
+          -0.022849284200146355,
+          -0.055371675285410774,
+          0.008350968115696614
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.49510699178552536,
+        "p2.5": 0.3784433489223713,
+        "p97.5": 0.6198192016040239,
+        "max_dist_from_0.5": 0.16546176953111158,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7294465530002165,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.0238134641158696
+      }
+    },
+    "SmolLM2-1.7B-Instruct -> Qwen2.5-3B-Instruct": {
+      "n_shared": 5000,
+      "label_agreement": 0.7392,
+      "summary": {
+        "native B probe (upper bound)": {
+          "mean": 0.7233286905497278,
+          "std": 0.013123572500724446
+        },
+        "transfer: ridge map": {
+          "mean": 0.7327094828505827,
+          "std": 0.022509238205188273
+        },
+        "transfer: Procrustes map": {
+          "mean": 0.7100585792052743,
+          "std": 0.025136153523333336
+        },
+        "control: shuffled-pair ridge": {
+          "mean": 0.5132938192254054,
+          "std": 0.12379325715700118
+        },
+        "control: random orthogonal (mean of null)": {
+          "mean": 0.502122988642992,
+          "std": 0.0031372974158124164
+        },
+        "control: unaligned": {
+          "mean": 0.47866352857484407,
+          "std": 0.02872373534124988
+        },
+        "difficulty: A probe on A": {
+          "mean": 0.6810872498260073,
+          "std": 0.007062492242739118
+        },
+        "difficulty: A correctness": {
+          "mean": 0.7216160998358715,
+          "std": 0.010149527561675968
+        },
+        "B min token log-prob": {
+          "mean": 0.7919318888570228,
+          "std": 0.008894335096900335
+        }
+      },
+      "bootstrap": {
+        "transfer: ridge map - control: shuffled-pair ridge": [
+          0.19973446096297143,
+          0.1624649220791233,
+          0.23726887838637217
+        ],
+        "transfer: ridge map - difficulty: A probe on A": [
+          0.09057884474353549,
+          0.06469708808581948,
+          0.11481865092296387
+        ],
+        "transfer: ridge map - B min token log-prob": [
+          -0.028878137233958063,
+          -0.05755096027155014,
+          -0.0018789685861669695
+        ]
+      },
+      "random_rotation_null": {
+        "n": 250,
+        "mean": 0.502122988642992,
+        "p2.5": 0.36764721781237375,
+        "p97.5": 0.6253929916282626,
+        "max_dist_from_0.5": 0.1795941910966341,
+        "perm_p_value_max_over_seeds": 0.0196078431372549
+      },
+      "verdict": {
+        "best_method": "transfer: ridge map",
+        "transfer_auroc": 0.7327094828505827,
+        "checks": {
+          "beats random-rotation null on every split (perm. p < 0.05)": true,
+          "above the null's 97.5th percentile": true,
+          "beats shuffled-pair map by > 1 std": true,
+          "beats difficulty baseline (A probe on A) by > 1 std": true
+        },
+        "verdict": "TRANSFERS, beyond shared question difficulty",
+        "fraction_of_native": 1.0129689205245342
+      }
+    }
+  },
+  "names": [
+    "Qwen2.5-1.5B-Instruct",
+    "Qwen2.5-3B-Instruct",
+    "SmolLM2-1.7B-Instruct"
+  ],
+  "matrix": [
+    [
+      0.7124799375735322,
+      0.7636407314267363,
+      0.7210336946168894
+    ],
+    [
+      0.7629704450988914,
+      0.7233286905497278,
+      0.7192653248370192
+    ],
+    [
+      0.7294465530002165,
+      0.7327094828505827,
+      0.6671946495719487
+    ]
+  ]
+}
