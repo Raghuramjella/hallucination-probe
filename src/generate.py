@@ -50,7 +50,7 @@ def main():
         for row, prompt, answer in zip(rows, prompts, answers):
             aliases = row["answer"]["aliases"] or [row["answer"]["value"]]
             answer = answer.strip()
-            wrong = 0 if is_correct(answer, aliases) else 1
+            wrong = 0 if is_correct(answer, aliases, row["question"]) else 1
             n_wrong += wrong
             out.write(json.dumps({
                 "question": row["question"],

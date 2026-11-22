@@ -34,6 +34,18 @@ layer, log-prob and combined baselines with significance tests, timed
 self-consistency, TriviaQA -> Natural Questions transfer, multi-model comparison
 (change `MODEL_ID` and re-run), and a Gradio demo with a public link.
 
+## Live demo only
+
+`notebooks/03_demo.ipynb` reloads the probe that notebook 02 saved to Drive and starts the
+Gradio app with a public link in about 2 minutes, with no retraining.
+
+## Review deck
+
+Copy `results.json` (and optionally `trivia_answers.jsonl` and `demo_url.txt`) from
+`MyDrive/hallucination_probe_v2/<model>/` into `results/`, then run
+`python scripts/build_review_deck.py`. This writes `Final_Review_PPT.pptx`. Without `results/`
+it falls back to the numbers in the full report.
+
 ## Or run the scripts
 
 ```bash

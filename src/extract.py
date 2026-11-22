@@ -53,12 +53,16 @@ def main():
     for shard_start in range(0, len(records), SHARD_SIZE):
         shard_id = shard_start // SHARD_SIZE
         path = ACTS_PREFIX.parent / f"{ACTS_PREFIX.name}_{shard_id:05d}.npy"
+        meta_path = path.with_suffix(".meta.npz")
         chunk = records[shard_start:shard_start + SHARD_SIZE]
 
-        if path.exists():
+        # labels/groups are saved next to each shard, so a resume restores
+        # exactly the rows that were kept (empty answers are dropped)
+        if path.exists() and meta_path.exists():
             print(f"shard {shard_id} exists, skipping")
-            labels += [r["label"] for r in chunk]
-            groups += [r["group"] for r in chunk]
+            m = np.load(meta_path, allow_pickle=True)
+            labels += m["label"].tolist()
+            groups += m["group"].tolist()
             continue
 
         feats, keep_labels, keep_groups = [], [], []
@@ -70,7 +74,12 @@ def main():
             keep_labels.append(r["label"])
             keep_groups.append(r["group"])
 
+        if not feats:
+            print(f"shard {shard_id}: no usable answers, skipped")
+            continue
         np.save(path, np.stack(feats).astype(np.float16))
+        np.savez(meta_path, label=np.array(keep_labels, dtype=np.int64),
+                 group=np.array(keep_groups, dtype=object))
         labels += keep_labels
         groups += keep_groups
         print(f"saved {path.name}  shape={np.stack(feats).shape}")

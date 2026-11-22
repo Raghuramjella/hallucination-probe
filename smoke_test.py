@@ -36,6 +36,13 @@ check("empty answer graded wrong",
       is_correct("", ["Paris"]), False)
 check("2-char alias ignored (too short to trust)",
       is_correct("a totally unrelated answer", ["UK"]), False)
+check("short alias graded by word boundary",
+      is_correct("UK", ["UK"]), True)
+check("alias inside another word is NOT a match",
+      is_correct("a bus", ["US"]), False)
+check("alias echoed from the question is ignored",
+      is_correct("The Georgia Peach", ["Georgia Peach", "Ty Cobb"],
+                 "Who was known as the Georgia Peach?"), False)
 check("group_key normalises the entity",
       group_key(["The Eiffel Tower"]), "eiffel tower")
 check("group_key survives empty aliases",

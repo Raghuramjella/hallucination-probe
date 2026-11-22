@@ -20,7 +20,8 @@ from config import (ACTS_PREFIX, ARTIFACTS, FIGURES, GROUPS_FILE, LABELS_FILE,
 
 
 def load_all():
-    shards = sorted(ACTS_PREFIX.parent.glob(f"{ACTS_PREFIX.name}_*.npy"))
+    shards = sorted(p for p in ACTS_PREFIX.parent.glob(f"{ACTS_PREFIX.name}_*.npy")
+                    if not p.name.endswith(".meta.npy"))
     if not shards:
         raise SystemExit("no activation shards found -- run extract.py first")
     X = np.concatenate([np.load(s) for s in shards], axis=0)
@@ -59,16 +60,23 @@ def main():
     tr, te = grouped_split(y, groups)
     print(f"train={len(tr)}  test={len(te)}  (entity-disjoint)")
 
-    scores = []
+    # choose the layer on a VALIDATION split carved out of train -- the test
+    # set is only touched once the layer is fixed, so its AUROC is unbiased
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=RANDOM_SEED + 1)
+    itr, iva = next(gss.split(np.zeros(len(tr)), y[tr], groups[tr]))
+    vtr, va = tr[itr], tr[iva]
+
+    scores, val_scores = [], []
     for L in range(n_layers):
         Xl = X[:, L, :].astype(np.float32)
+        val_scores.append(roc_auc_score(y[va], fit_probe(Xl[vtr], y[vtr]).predict_proba(Xl[va])[:, 1]))
         clf = fit_probe(Xl[tr], y[tr])
         auc = roc_auc_score(y[te], clf.predict_proba(Xl[te])[:, 1])
         scores.append(auc)
-        print(f"  layer {L:3d}  AUROC {auc:.4f}")
+        print(f"  layer {L:3d}  val AUROC {val_scores[-1]:.4f}  test AUROC {auc:.4f}")
 
-    best = int(np.argmax(scores))
-    print(f"\nBEST: layer {best}  AUROC {scores[best]:.4f}  "
+    best = int(np.argmax(val_scores))          # chosen on validation only
+    print(f"\nBEST (by validation): layer {best}  test AUROC {scores[best]:.4f}  "
           f"({100 * best / (n_layers - 1):.0f}% depth)")
     interpret(scores[best])
 

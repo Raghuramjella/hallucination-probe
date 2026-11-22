@@ -16,20 +16,27 @@ def normalize(s: str) -> str:
     return " ".join(s.split())
 
 
-def is_correct(prediction: str, aliases) -> bool:
-    """True if any gold alias appears in the (normalised) prediction.
+def _contains(text: str, phrase: str) -> bool:
+    return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
 
-    Substring containment rather than exact match, because a chat model
-    answers "The capital is Paris" where the gold alias is "Paris".
-    The cost is false positives on aliases that are common words -- which
-    is why very short aliases are ignored.
+
+def is_correct(prediction: str, aliases, question: str = "") -> bool:
+    """True if any gold alias appears as a whole word/phrase in the prediction.
+
+    - Word-boundary match, not raw substring: "us" no longer matches "bus",
+      so short answers like "8" or "UK" can be graded at all.
+    - An alias that already appears in the QUESTION is ignored: otherwise a
+      model echoing "the Georgia Peach" is graded right for a nickname question
+      (the systematic error found in the label audit).
     """
-    p = normalize(prediction)
+    p, q = normalize(prediction), normalize(question)
     if not p:
         return False
     for a in aliases:
         na = normalize(a)
-        if len(na) >= 3 and na in p:
+        if not na or (q and _contains(q, na)):
+            continue
+        if _contains(p, na):
             return True
     return False
 

@@ -39,7 +39,8 @@ def main():
     print(f"answer-everything accuracy: {100 * base:.1f}%\n")
 
     cov, acc = risk_coverage(risk, wrong)
-    aurc = float(np.trapz(1 - acc, cov))
+    _trap = getattr(np, "trapezoid", None) or np.trapz   # trapz removed in NumPy 2
+    aurc = float(_trap(1 - acc, cov))
     print(f"{'coverage':>10} {'accuracy':>10} {'gain':>8}")
     for target in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5):
         i = max(0, int(target * len(cov)) - 1)
