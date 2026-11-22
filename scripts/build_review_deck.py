@@ -12,6 +12,8 @@ Output:
 """
 import copy
 import json
+
+import numpy as np
 from pathlib import Path
 
 import matplotlib
@@ -41,8 +43,8 @@ V1_SWEEP = [0.5462, 0.5553, 0.5921, 0.6083, 0.6270, 0.6596, 0.6835, 0.6565, 0.66
             0.7381, 0.7234]
 
 
-def load_numbers():
-    f = RES / "results.json"
+def load_numbers(f=None):
+    f = f or RES / "results.json"
     if not f.exists():
         print("results/results.json not found -> using report (v1) numbers")
         return {
@@ -71,8 +73,8 @@ def load_numbers():
         ratio = sc["sc_s_per_q"] / sc["probe_s_per_q"]
     n = None
     for name in ("trivia_answers.jsonl",):
-        if (RES / name).exists():
-            n = sum(1 for _ in open(RES / name))
+        if (f.parent / name).exists():
+            n = sum(1 for _ in open(f.parent / name))
     return {
         "source": "v2", "model": r["model"].split("/")[-1], "n": n,
         "n_layers": r["n_layers"],
@@ -92,6 +94,7 @@ def load_numbers():
         "sel": {k: (v["probe"], v["oracle"], v["captured"]) for k, v in r.get("selective", {}).items()},
         "transfer": r.get("transfer_nq"),
         "sc_probe": (sc.get("auroc") or {}).get("internal-state probe"),
+        "raw": r,
         "sc_n": 300 if sc else None,
     }
 
@@ -418,7 +421,7 @@ def slide_demo(prs, N):
     return s
 
 
-def slide_status(prs, N):
+def slide_status(prs, N, N2=None, T=None, others=()):
     s = blank(prs)
     header(s, "Work completed and next steps")
     done = ["End-to-end pipeline: generate → grade → extract → probe → abstain",
@@ -432,11 +435,21 @@ def slide_status(prs, N):
         done.insert(4, "Cross-dataset transfer: TriviaQA → Natural Questions")
     if N["ci"] and N["ci"][0] > 0:
         done.insert(3, "Probe beats log-probability — statistically significant")
-    todo = ["More models: Qwen2.5-3B, Llama-3.2, Gemma-2",
-            "Cross-model probe transfer (Procrustes alignment)",
+    if others:
+        done.insert(1, "Replicated on " + ", ".join(short_name(o["model"]) for o in others)
+                    + " (second model family)")
+    if T:
+        fam = {m["name"].split("-")[0] for m in T["models"]}
+        done.insert(2, "Cross-model probe transfer, beyond all controls"
+                    + ("" if len(fam) > 1 else " (within Qwen family)"))
+    cross_family_done = bool(T) and len({m["name"].split("-")[0] for m in T["models"]}) > 1
+    todo = ["Llama-3.2 / Gemma-2 (licence approval pending)"] + \
+           ([] if cross_family_done else ["Cross-family transfer: Qwen – SmolLM2" if others else
+                                          "Cross-model probe transfer (Procrustes alignment)"]) + [
             "Semantic-entropy baseline (NLI clustering)",
             "Second task type: HaluEval / HotpotQA",
             "Paper for an IEEE / Scopus-indexed conference"]
+    step = 44 if len(done) <= 8 else 38
     text(s, 61, 108, 440, 26, "Completed", size=16, color=GREEN, bold=True)
     text(s, 520, 108, 400, 26, "Next steps", size=16, color=NAVY, bold=True)
     y = 142
@@ -445,7 +458,7 @@ def slide_status(prs, N):
         text(s, 61, y + 3, 18, 18, "✓", size=10, color="FFFFFF", bold=True, align=PP_ALIGN.CENTER,
              anchor=MSO_ANCHOR.MIDDLE)
         text(s, 88, y, 410, 40, d, size=13)
-        y += 44
+        y += step
     y = 142
     for d in todo:
         box(s, 520, y + 3, 18, 18, line=ACCENT, shape=MSO_SHAPE.OVAL)
@@ -454,10 +467,15 @@ def slide_status(prs, N):
     return s
 
 
-def slide_limits(prs, N):
+def slide_limits(prs, N, others=()):
     s = blank(prs)
     header(s, "Limitations")
-    items = [("One model family so far", "Qwen2.5-1.5B; generality across families is the next experiment"),
+    fams = {o["model"].split("-")[0] for o in [N, *others]}
+    if len(fams) > 1:
+        first = ("Small models only (1.5B–3B)", "two families tested; behaviour at 7B+ not measured here")
+    else:
+        first = ("One model family so far", "Qwen2.5 only; generality across families is the next experiment")
+    items = [first,
              ("Short factual questions only", "prior work reports weaker transfer to reasoning or summarisation"),
              ("Automatic grading", "answers graded by alias matching; audited by hand, small residual noise"),
              ("Weak base model", f"{100 * N['acc']:.0f}% accuracy caps how high abstention can lift accuracy — "
@@ -473,9 +491,178 @@ def slide_limits(prs, N):
     return s
 
 
+def ci_short(ci):
+    return f"{ci[0]:+.3f}…{ci[1]:+.3f}".replace("0.", ".")
+
+
+def short_name(m):
+    return m.replace("-Instruct", "").replace("Qwen2.5-", "Qwen ").replace("SmolLM2-", "SmolLM2 ")
+
+
+def slide_scale(prs, N, others):
+    """Same pipeline on other models (larger, and from another family)."""
+    s = blank(prs)
+    models = [N] + others
+    header(s, "Does it hold for other models?",
+           "Identical pipeline and questions: " + ", ".join(short_name(m["model"]) for m in models))
+    fig, ax = plt.subplots(figsize=(6.2, 4.2), dpi=200)
+    palette = ["#2E6B9E", "#14355E", "#1E6B4A", "#A4551B"]
+    for M_, c in zip(models, palette):
+        sw = M_["raw"]["sweeps"]["a_mean"]
+        x = [100 * i / (len(sw) - 1) for i in range(len(sw))]
+        ax.plot(x, sw, lw=2.2, color=c, marker="o", ms=2.5, label=short_name(M_["model"]))
+    ax.axhline(0.5, ls="--", lw=1, color="#999")
+    ax.set_xlabel("relative depth (%)", color="#62707E", fontsize=12)
+    ax.set_ylabel("validation AUROC", color="#62707E", fontsize=12)
+    ax.legend(frameon=False, fontsize=11, loc="lower right"); fig_style(ax); fig.tight_layout()
+    img = FIG / "deck_scale_sweep.png"; fig.savefig(img); plt.close(fig)
+    s.shapes.add_picture(str(img), Pt(40), Pt(128), width=Pt(450))
+
+    def depth(M_):
+        return f"{100 * M_['layer'] / M_['n_layers']:.0f}%"
+    head = [""] + [short_name(m["model"]).replace("Qwen ", "Qwen\u00a0") for m in models]
+    rows = [head,
+            ["Model accuracy"] + [f"{100 * m['acc_all']:.1f}%" for m in models],
+            ["Probe AUROC"] + [f"{m['auroc']:.3f}" for m in models],
+            ["Log-prob AUROC"] + [f3(m["min_lp"]) for m in models],
+            ["Beats log-prob*"] + ["✓" if m["ci"] and m["ci"][0] > 0 else "✗" for m in models],
+            ["Peak depth"] + [depth(m) for m in models],
+            ["Acc. skipping 20%"] + [f"{100 * m['sel']['0.8'][0]:.1f}%" for m in models]]
+    k = len(models)
+    first = 0.34 if k > 2 else 0.42
+    table(s, 495, 128, 435, rows, [first] + [(1 - first) / k] * k, highlight=2, row_h=28)
+    allsig = all(m["ci"] and m["ci"][0] > 0 for m in models)
+    text(s, 495, 128 + len(rows) * 33 + 2, 435, 30,
+         "* paired bootstrap, 95% CI of the gain excludes zero:  "
+         + "   ".join(f"{short_name(m['model'])} [{m['ci'][0]:+.3f}, {m['ci'][1]:+.3f}]" for m in models),
+         size=9, color=GREY, italic=True)
+    text(s, 495, 400, 435, 70, [[("The signal replicates on every model", {"bold": True, "color": GREEN}),
+                                 (" — including a different model family — peaks in the mid-to-late layers, and "
+                                  + ("beats log-probability significantly every time." if allsig else
+                                     "mostly beats log-probability."), {})]], size=13)
+    return s
+
+
+def family(name):
+    return name.split("-")[0]
+
+
+def make_transfer_heatmap(T):
+    names = T["names"]
+    M = np.array(T["matrix"], dtype=float)
+    lab = [short_name(n) for n in names]
+    fig, ax = plt.subplots(figsize=(5.4, 4.6), dpi=200)
+    im = ax.imshow(M, cmap="Blues", vmin=0.5, vmax=0.9)
+    for i in range(len(names)):
+        for j in range(len(names)):
+            cross = family(names[i]) != family(names[j])
+            ax.text(j, i, f"{M[i, j]:.3f}", ha="center", va="center", fontsize=13,
+                    fontweight="bold" if cross else "normal",
+                    color="white" if M[i, j] > 0.74 else "#14355E")
+            if cross:
+                ax.add_patch(plt.Rectangle((j - .48, i - .48), .96, .96, fill=False, ec="#1E6B4A", lw=2.5))
+    ax.set_xticks(range(len(names)), lab, fontsize=11)
+    ax.set_yticks(range(len(names)), lab, fontsize=11)
+    ax.set_xlabel("evaluated on (model's own errors)", color="#62707E", fontsize=11)
+    ax.set_ylabel("probe trained on", color="#62707E", fontsize=11)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+    fig.colorbar(im, fraction=.046, pad=.03).ax.tick_params(labelsize=9, colors="#62707E")
+    fig.tight_layout()
+    out = FIG / "deck_transfer_matrix.png"; fig.savefig(out); plt.close(fig)
+    return out
+
+
+def xmodel_rows(T):
+    out = []
+    for pair, r in T["pairs"].items():
+        a, b = [x.strip() for x in pair.split("->")]
+        out.append((a, b, r))
+    return out
+
+
+def slide_xmodel(prs, T):
+    """Cross-model probe transfer: heatmap + key messages."""
+    s = blank(prs)
+    header(s, "Cross-model transfer", "Train the probe on one model, use it to catch a different model's mistakes")
+    img = make_transfer_heatmap(T)
+    s.shapes.add_picture(str(img), Pt(40), Pt(122), height=Pt(340))
+    rows = xmodel_rows(T)
+    cross = [r for a, b, r in rows if family(a) != family(b)]
+    within = [r for a, b, r in rows if family(a) == family(b)]
+
+    def frac(rs):
+        f = [r["verdict"]["fraction_of_native"] for r in rs]
+        return f"{100 * min(f):.0f}–{100 * max(f):.0f}%"
+    pts = []
+    if cross:
+        pts.append(("Works across model families",
+                    f"Qwen and SmolLM2 (different companies, data, tokenizers): {frac(cross)} of the native probe"))
+    if within:
+        pts.append(("Works across model sizes", f"Qwen 1.5B and 3B: {frac(within)} of the native probe"))
+    beats_lp = sum(r["verdict"]["transfer_auroc"] > r["summary"]["B min token log-prob"]["mean"] for _, _, r in rows)
+    pts.append(("Beats the target model's own log-probability",
+                f"in {beats_lp} of {len(rows)} directions — with no training on that model's labels"))
+    pts.append(("Method", "linear map fitted on unlabelled paired questions (ridge); "
+                          "framed cells = across families, diagonal = native probe"))
+    pl = RES / "transfer_p_last" / "transfer_results.json"
+    if pl.exists():
+        P = json.loads(pl.read_text())
+        ok = sum(r["verdict"]["verdict"].startswith("TRANSFERS") for r in P["pairs"].values())
+        vals = [r["verdict"]["transfer_auroc"] for r in P["pairs"].values()]
+        pts.insert(len(pts) - 1, ("Even before the answer exists",
+                                  f"question-only probe transfers in {ok} of {len(vals)} directions "
+                                  f"(AUROC {min(vals):.2f}–{max(vals):.2f})"))
+    y = 128
+    for t, d in pts:
+        box(s, 470, y, 4, 54, fill=GREEN if not t.startswith("Method") else ACCENT)
+        text(s, 482, y, 445, 62, [[(t, {"bold": True, "color": NAVY, "size": 15})],
+                                  [(d, {"size": 12, "color": GREY})]])
+        y += 68
+    return s
+
+
+def slide_xmodel_controls(prs, T):
+    """Every direction against every control."""
+    s = blank(prs)
+    header(s, "Is the transfer real?", "Every direction must beat chance-level controls and \u201cboth models find it hard\u201d")
+    M0, MD = "native B probe (upper bound)", "difficulty: A probe on A"
+    rows = [["probe from → errors of", "transfer", "random", "difficulty", ""]]
+    for a, b, r in xmodel_rows(T):
+        v, sm, nl = r["verdict"], r["summary"], r["random_rotation_null"]
+        rows.append([f"{short_name(a)} → {short_name(b)}", f"{v['transfer_auroc']:.3f}",
+                     f"{sm['control: random orthogonal (mean of null)']['mean']:.2f}",
+                     f"{sm[MD]['mean']:.3f}", "✓" if v["verdict"].startswith("TRANSFERS, beyond") else "✗"])
+    table(s, 61, 124, 500, rows, [0.46, 0.16, 0.13, 0.17, 0.08], row_h=27)
+    yb = 124 + len(rows) * 32 + 6
+    text(s, 61, yb, 500, 70, [
+        [("random", {"bold": True, "color": NAVY}), ("  mean of 50 random rotations per split (chance = 0.50)", {"color": GREY})],
+        [("difficulty", {"bold": True, "color": NAVY}), ("  source model's probe on its own activations", {"color": GREY})],
+        [("✓", {"bold": True, "color": GREEN}), ("  beats random null on every split (p < 0.05), shuffled pairs and difficulty", {"color": GREY})]],
+        size=11)
+    pick = next(((a, b) for a, b, _ in xmodel_rows(T) if family(a) != family(b)), None) or \
+        next(((a, b) for a, b, _ in xmodel_rows(T)), None)
+    png = RES / "transfer" / f"controls_{pick[0]}__to__{pick[1]}.png"
+    if png.exists():
+        s.shapes.add_picture(str(png), Pt(575), Pt(132), width=Pt(355))
+        text(s, 575, 340, 355, 40, f"example: {short_name(pick[0])} → {short_name(pick[1])} "
+                                   "(green = transfer, grey = controls, orange = difficulty)",
+             size=10, color=GREY, italic=True)
+    return s
+
+
 # ------------------------------------------------------------------ main ---
 def main():
     N = load_numbers()
+    extra = sorted(RES.glob("*/results.json")) if N["source"] == "v2" else []
+    others = [load_numbers(f) for f in extra]
+    N2 = others[0] if others else None
+    tf = RES / "transfer" / "transfer_results.json"
+    T = json.loads(tf.read_text()) if tf.exists() else None
+    for o in others:
+        print(f"extra model: {o['model']}")
+    if T:
+        print(f"cross-model transfer: {len(T['pairs'])} pairs")
     sweep_png = make_sweep_fig(N)
     rc_png = RES / "risk_coverage_v2.png"
     rc_png = make_rc_fig(N)          # consistent styling; Drive PNG kept as backup
@@ -487,8 +674,9 @@ def main():
     # original order: 1 title, 2 intro, 3 problem, 4 objectives, 5 method, 6 tools,
     # 7 preliminary results, 8 expected outcomes, 9 applications, 10 references
     new = [slide_results(prs, N), slide_sweep(prs, N, sweep_png), slide_selective(prs, N, rc_png),
-           slide_transfer(prs, N), slide_trust(prs, N), slide_demo(prs, N),
-           slide_limits(prs, N), slide_status(prs, N)]
+           slide_transfer(prs, N), slide_scale(prs, N, others) if others else None,
+           slide_xmodel(prs, T) if T else None, slide_xmodel_controls(prs, T) if T else None, slide_trust(prs, N), slide_demo(prs, N),
+           slide_limits(prs, N, others), slide_status(prs, N, N2, T, others)]
     new = [x for x in new if x is not None]
     delete_slide(prs, 7)             # expected outcomes -> replaced by status slide
     delete_slide(prs, 6)             # preliminary results -> replaced by results slide

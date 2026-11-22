@@ -39,6 +39,24 @@ self-consistency, TriviaQA -> Natural Questions transfer, multi-model comparison
 `notebooks/03_demo.ipynb` reloads the probe that notebook 02 saved to Drive and starts the
 Gradio app with a public link in about 2 minutes, with no retraining.
 
+## Part 4: cross-model transfer (RQ2)
+
+Does a probe trained on one model detect another model's hallucinations? Run notebook 02 for
+two or more models (same `N_TRIVIA`), then run `notebooks/04_cross_model_transfer.ipynb`
+(CPU only), or locally:
+
+```bash
+python src/transfer.py --root <path>/hallucination_probe_v2 [--pooling p_last] [--sweep]
+```
+
+The script maps model B's activations into model A's space (ridge, or PCA + orthogonal
+Procrustes) on questions disjoint from probe training and evaluation. It then scores them with A's
+probe against **B's own errors**. A pair only counts as transferring if it beats a 50-draw
+random-rotation null on every split and a shuffled-pair map. It must also beat the difficulty
+baselines: A's probe on A's own activations, and A's correctness. Otherwise the transfer could
+just be "both models find this question hard". `--sweep` adds a layer-by-layer CKA analysis.
+Rebuild the notebook after editing `src/transfer.py` with `python scripts/make_transfer_notebook.py`.
+
 ## Review deck
 
 Copy `results.json` (and optionally `trivia_answers.jsonl` and `demo_url.txt`) from

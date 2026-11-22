@@ -94,8 +94,35 @@ check("perfect ranking gives 100% at 60% coverage", round(float(acc[2]), 3), 1.0
 check("coverage ends at 1.0", round(float(cov[-1]), 3), 1.0)
 
 
+# --------------------------------------------------------------- transfer ---
+print("\n[4] cross-model transfer")
+from transfer import ProcrustesMap, RidgeMap, pair, three_way_split
+
+rng = np.random.default_rng(1)
+Xa = rng.normal(size=(500, 20))
+Q, _ = np.linalg.qr(rng.normal(size=(20, 20)))
+Xb = Xa @ Q.T * 3.0 + 0.01 * rng.normal(size=(500, 20))     # B = rotated + scaled A
+pm = ProcrustesMap(r=20).fit(Xb, Xa)
+check("Procrustes recovers a known rotation", bool(np.abs(pm.transform(Xb) - Xa).max() < 0.1), True)
+rm = RidgeMap().fit(Xb, Xa)
+check("ridge map recovers a known linear map", bool(np.abs(rm.transform(Xb) - Xa).mean() < 0.1), True)
+
+a = {"idx": np.array([0, 1, 2, 5]), "label": np.array([1, 0, 1, 0])}
+b = {"idx": np.array([5, 2, 9, 0]), "label": np.array([7, 8, 9, 6])}
+pa, pb = pair(a, b)
+check("pair() keeps shared questions, same order", (pa["idx"].tolist(), pb["idx"].tolist()), ([0, 2, 5], [0, 2, 5]))
+check("pair() carries labels along", pb["label"].tolist(), [6, 8, 7])
+
+groups = np.array(["e%d" % (i % 90) for i in range(900)])
+P, M, E = three_way_split(groups, seed=0)
+check("probe/map/eval splits are entity-disjoint",
+      len(set(groups[P]) & set(groups[M])) + len(set(groups[P]) & set(groups[E]))
+      + len(set(groups[M]) & set(groups[E])), 0)
+check("probe/map/eval splits cover every example", len(P) + len(M) + len(E), 900)
+
+
 # ------------------------------------------------------------------ config ---
-print("\n[4] config + imports")
+print("\n[5] config + imports")
 import config
 check("model id set", isinstance(config.MODEL_ID, str) and len(config.MODEL_ID) > 0, True)
 check("data dir created", config.DATA.exists(), True)
